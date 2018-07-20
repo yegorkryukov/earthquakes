@@ -14,29 +14,24 @@ L.tileLayer(mapbox).addTo(map);
 var url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson";
 
 // // Grabbing the data with d3..
-d3.json(url, function(response) {
-  console.log(response);
+d3.json(url, function (response) {
+  // console.log(response);
 
-//   // Creating a new marker cluster group
-  var markers = L.markerClusterGroup();
-
-//   // Loop through our data...
+  // Loop through our data...
   for (var i = 0; i < response['features'].length; i++) {
-//     // set the data location property to a variable
-    var location = response['features'][i]['geometry'];
-    console.log(location);
+    var feature = response.features[i];
+    L.geoJSON(feature).addTo(map);
 
-//     // If the data has a location property...
-    if (location) {
+    // set the data location property to a variable
+    // var feature = response.features[i],
+    //     location = feature.geometry;
+    //   console.log(location);
 
-//       // Add a new marker to the cluster group and bind a pop-up
-      markers.addLayer(L.marker([location.coordinates[1], location.coordinates[0]]));
-//         .bindPopup(response[i].descriptor));
-    }
-
+    // // If the data has a location property...
+    // if (location) {
+    //   L.marker(location[1],location[0])
+    //     .bindPopup("<h1>" + city.name + "</h1> <hr> <h3>Population " + city.population + "</h3>")
+    //     .addTo(map);
+    // }
   }
-
-//   // Add our marker cluster layer to the map
-  map.addLayer(markers);
-
 });
