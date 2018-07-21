@@ -9,13 +9,13 @@ d3.json(queryUrl, function (data) {
 
 // function to return colors based on magnitude
 function getColor(d) {
-  return d > 8 ? '#990000' : // great
-         d > 7 ? '#d7301f' : // major
-         d > 6 ? '#ef6548' : // strong
-         d > 5 ? '#fc8d59' : // moderate
-         d > 4 ? '#fdbb84' : // light
-         d > 3 ? '#fdd49e' : // minor
-                 '#fef0d9';
+  return d > 8 ? '#99000d' : // great
+         d > 7 ? '#cb181d' : // major
+         d > 6 ? '#ef3b2c' : // strong
+         d > 5 ? '#fb6a4a' : // moderate
+         d > 4 ? '#fc9272' : // light
+         d > 3 ? '#fcbba1' : // minor
+                 '#fee5d9';
 };
 
 function createFeatures(earthquakeData) {
@@ -25,6 +25,35 @@ function createFeatures(earthquakeData) {
   function onEachFeature(feature, layer) {
     layer.bindPopup("Place: " + feature.properties.place +
       "<br> Magnitude: " + feature.properties.mag + "<br> Date:" + new Date(feature.properties.time));
+    layer.on({
+      mouseover: highlightFeature,
+      mouseout: resetHighlight,
+      click: zoomToFeature
+    });
+  }
+
+  // create event listener to highlight markers on mouseover
+  function highlightFeature(e) {
+    var layer = e.target;
+    layer.setStyle({
+        weight: 3,
+        color: '#fee5d9',
+        dashArray: '',
+        fillOpacity: 1
+    });
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+    }
+  }
+
+  // define function on mouseout
+  function resetHighlight(e) {
+    earthquakes.resetStyle(e.target);
+  }
+
+  // zoom to feature
+  function zoomToFeature(e) {
+    map.fitBounds(e.target.getBounds());
   }
 
   // Create a GeoJSON layer containing the features array on the earthquakeData object
@@ -33,9 +62,9 @@ function createFeatures(earthquakeData) {
       pointToLayer: function (feature, latlng) {
           return L.circleMarker(latlng, 
             {
-              radius: feature.properties.mag * 5,
-              fillColor: "#ff7800",
-              color: getColor(feature.properties.mag),
+              radius: feature.properties.mag * 3,
+              color: "#ff7800",
+              fillColor: getColor(feature.properties.mag),
               weight: 1,
               opacity: 1,
               fillOpacity: 0.8
@@ -82,3 +111,5 @@ function createMap(earthquakes) {
     collapsed: false
   }).addTo(myMap);
 }
+
+
