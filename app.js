@@ -1,14 +1,5 @@
 // Store our API endpoint inside queryUrl
-var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson";
-
-var geojsonMarkerOptions = {
-  radius: 8,
-  fillColor: "#ff7800",
-  color: "#000",
-  weight: 1,
-  opacity: 1,
-  fillOpacity: 0.5
-};
+var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 
 // Perform a GET request to the query URL
 d3.json(queryUrl, function (data) {
@@ -18,15 +9,13 @@ d3.json(queryUrl, function (data) {
 
 // function to return colors based on magnitude
 function getColor(d) {
-  return d > 9 ? '#662506' :
-         d > 8 ? '#993404' :
-         d > 7 ? '#993404' :
-         d > 6 ? '#ec7014' :
-         d > 5 ? '#fe9929' :
-         d > 4 ? '#fec44f' :
-         d > 3 ? '#fee391' :
-         d > 2 ? '#fff7bc' :
-                 '#ffffe5';
+  return d > 8 ? '#990000' : // great
+         d > 7 ? '#d7301f' : // major
+         d > 6 ? '#ef6548' : // strong
+         d > 5 ? '#fc8d59' : // moderate
+         d > 4 ? '#fdbb84' : // light
+         d > 3 ? '#fdd49e' : // minor
+                 '#fef0d9';
 };
 
 function createFeatures(earthquakeData) {
@@ -49,7 +38,7 @@ function createFeatures(earthquakeData) {
               color: getColor(feature.properties.mag),
               weight: 1,
               opacity: 1,
-              fillOpacity: 0.5
+              fillOpacity: 0.8
             }
           );
       },
