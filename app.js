@@ -1,11 +1,32 @@
-// Store our API endpoint inside queryUrl
+// store geojson API endpoint inside queryUrl
 var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 
-// Perform a GET request to the query URL
-d3.json(queryUrl, function (data) {
-  // Once we get a response, send the data.features object to the createFeatures function
-  createFeatures(data.features);
-});
+// create map
+var map = L.map("map").setView([0, -30],2);
+
+// add tile layer with map
+L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoieWtyeXVrb3YiLCJhIjoiY2ppY2F0NHV0MDNubDNxbWh2eTgzNXQzeiJ9.whXqNaMeiQwhB6ikO4AacQ").addTo(map);
+
+// control showing additional info on mouseover
+var info = L.control();
+
+info.onAdd = function (map) {
+    this._div = L.DomUtil.create('div', 'info'); 
+    this.update();
+    return this._div;
+};
+
+// method to update the control based on feature properties passed
+info.update = function (feature) {
+    this._div.innerHTML = "<h4>Earhquakes in last 7 days</h4>" +
+    (feature ?
+      "Place: " + feature.place
+      + "<br> Magnitude: " + feature.mag 
+      + "<br> Date: " + new Date(feature.time)
+      : "Hover over circles");
+};
+
+info.addTo(map);
 
 // function to return colors based on magnitude
 function getColor(d) {
@@ -18,47 +39,46 @@ function getColor(d) {
                  '#fee5d9';
 };
 
+// Perform a GET request to the query URL
+d3.json(queryUrl, function (data) {
+  // Once we get a response, send the data.features object to the createFeatures function
+  createFeatures(data.features);
+});
+
+var earthquakes;
+
+// create event listener to highlight markers on mouseover
+function highlightFeature(e) {
+  var layer = e.target;
+  layer.setStyle({
+      weight: 3,
+      color: '#fee5d9',
+      dashArray: '',
+      fillOpacity: 0.9
+  });
+  if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+      layer.bringToFront();
+  };
+  info.update(layer.feature.properties);
+}
+
+// define function on mouseout
+function resetHighlight(e) {
+  earthquakes.resetStyle(e.target);
+  info.update();
+}
+
+function onEachFeature(feature, layer) {
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight,
+  });
+}
+
 function createFeatures(earthquakeData) {
 
-  // Define a function we want to run once for each feature in the features array
-  // Give each feature a popup describing the place and time of the earthquake
-  function onEachFeature(feature, layer) {
-    layer.bindPopup("Place: " + feature.properties.place +
-      "<br> Magnitude: " + feature.properties.mag + "<br> Date:" + new Date(feature.properties.time));
-    layer.on({
-      mouseover: highlightFeature,
-      mouseout: resetHighlight,
-      click: zoomToFeature
-    });
-  }
-
-  // create event listener to highlight markers on mouseover
-  function highlightFeature(e) {
-    var layer = e.target;
-    layer.setStyle({
-        weight: 3,
-        color: '#fee5d9',
-        dashArray: '',
-        fillOpacity: 1
-    });
-    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-        layer.bringToFront();
-    }
-  }
-
-  // define function on mouseout
-  function resetHighlight(e) {
-    earthquakes.resetStyle(e.target);
-  }
-
-  // zoom to feature
-  function zoomToFeature(e) {
-    map.fitBounds(e.target.getBounds());
-  }
-
   // Create a GeoJSON layer containing the features array on the earthquakeData object
-  // Run the onEachFeature function once for each piece of data in the array
-  var earthquakes = L.geoJSON(earthquakeData, {
+  earthquakes = L.geoJSON(earthquakeData, {
       pointToLayer: function (feature, latlng) {
           return L.circleMarker(latlng, 
             {
@@ -72,44 +92,30 @@ function createFeatures(earthquakeData) {
           );
       },
     onEachFeature: onEachFeature
-  });
-
-  // Sending our earthquakes layer to the createMap function
-  createMap(earthquakes);
+  }).addTo(map);
 }
 
-function createMap(earthquakes) {
+// add legend
+var legend = L.control({position: 'bottomright'});
+	legend.onAdd = function (map) {
+		var div = L.DomUtil.create('div', 'info legend'),
+			grades = [0, 3, 4, 5, 6, 7, 8],
+			labels = [],
+			from, to;
+		for (var i = 0; i < grades.length; i++) {
+			from = grades[i];
+			to = grades[i + 1];
+			labels.push(
+				'<i style="background:' + getColor(from + 1) + '"></i> ' +
+				from + (to ? '&ndash;' + to : '+'));
+		}
+		div.innerHTML = labels.join('<br>');
+		return div;
+	};
 
-  // Define streetmap and darkmap layers
-  var streetmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoieWtyeXVrb3YiLCJhIjoiY2ppY2F0NHV0MDNubDNxbWh2eTgzNXQzeiJ9.whXqNaMeiQwhB6ikO4AacQ");
+  legend.addTo(map);
+  
+  map.attributionControl.addAttribution('Earthquake data: <a href="https://earthquake.usgs.gov">United States Geological Survey</a>');
 
-  var darkmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/dark-v9/tiles/256/{z}/{x}/{y}?" +
-    "access_token=pk.eyJ1IjoieWtyeXVrb3YiLCJhIjoiY2ppY2F0NHV0MDNubDNxbWh2eTgzNXQzeiJ9.whXqNaMeiQwhB6ikO4AacQ");
-
-  // Define a baseMaps object to hold our base layers
-  var baseMaps = {
-    "Street Map": streetmap,
-    "Dark Map": darkmap
-  };
-
-  // Create overlay object to hold our overlay layer
-  var overlayMaps = {
-    Earthquakes: earthquakes
-  };
-
-  // Create our map, giving it the streetmap and earthquakes layers to display on load
-  var myMap = L.map("map", {
-    center: [0, -30],
-    zoom: 2,
-    layers: [streetmap, earthquakes]
-  });
-
-  // Create a layer control
-  // Pass in our baseMaps and overlayMaps
-  // Add the layer control to the map
-  L.control.layers(baseMaps, overlayMaps, {
-    collapsed: false
-  }).addTo(myMap);
-}
-
+  map.attributionControl.addAttribution('Created by <a href="https://mindthatdata.com">Yegor Kryukov</a>');
 
